@@ -1,0 +1,53 @@
+---
+title: "Snow cover inmpacts on watershed coverage"
+author: "Kaela Amundson"
+date: "9/10/2019"
+output: html_document
+---
+
+## Data checking
+
+### Data read in
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse) 
+library(lubridate)
+library(dataRetrieval) #for downloading USGS data
+
+#ndsi 
+ndsi <- read_csv('data/hayman_ndsi.csv') %>%
+  rename(burned=2,unburned=3) %>%
+  filter(!is.na(burned),
+         !is.na(unburned)) %>%
+  gather(.,key='site',
+         value='ndsi',
+         -DateTime) # For this analysis we want the data in long format
+  
+  
+#USGS gauge above cheeseman lake '00060'
+q_hayman <- readNWISdata(sites=c('06700000'), #Site code 
+                  parameterCd='00060', #discharge code in cfs
+                  service='dv', # service = daily values (versus annual)
+                  startDate='1984-10-01', #Start date for getting the data
+                  endDate = '2019-9-10') %>% # End date (today) 
+  rename(q_cfs = X_00060_00003,
+         quality_cd = X_00060_00003_cd) %>% #rename long column name
+  filter(!is.na(q_cfs)) %>% #Drop NAs which can occur when there is ice or sensor breaks
+  as_tibble() #To make it act like a tibble
+```
+
+### Data exploring
+
+#### NDSI summary 
+```{r data exploring}
+
+```
+
+### Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
