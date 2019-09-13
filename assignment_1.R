@@ -24,7 +24,7 @@ ndsi <- read_csv(files[2]) %>%
 
 ndvi <- read_csv(files[3])%>% 
   rename(burned=2,unburned=3) %>%
-  mutate(data='ndvi')
+  mutate(data='ndvi') %>%
 
 # Stack as a tidy dataset
 full_long <- rbind(ndvi,ndmi,ndsi) %>%
@@ -61,8 +61,25 @@ ggplot(summer_only,aes(x=ndmi,y=ndvi,color=site)) +
 #In other words, does the previous year's snow cover influence vegetation
 # growth for the following summer? 
 
+?summarize
 
+winter_ndsi <- filter(full_wide, month %in% c(1,2,3,4)) %>%
+  group_by(year, site) %>%
+  summarize(mean_ndsi=mean(ndsi))
 
+summer_ndvi <- filter(full_wide, month %in% c(6,7,8)) %>%
+  group_by(year, site) %>%
+  summarize(mean_ndvi=mean(ndvi))
+
+?inner_join
+?merge
+
+NDSI_NDVI <- inner_join(winter_ndsi, summer_ndvi, by=c('year', 'site'))
+
+ggplot(NDSI_NDVI,aes(x=mean_ndsi,y=mean_ndvi,color=site)) + 
+  geom_point() +
+  theme_few() +
+  theme(legend.position=c(0.7,0.8))
 
 
 ## End code for question 2 -----------------
@@ -72,7 +89,16 @@ ggplot(summer_only,aes(x=ndmi,y=ndvi,color=site)) +
 #How is the snow effect from question 2 different between pre- and post-burn
 # and burned and unburned? 
 
-## Your code here
+?mutate
+
+NDSI_NDVI <- mutate(NDSI_NDVI, condition = cut(year, c(0, 2004, 2019), 
+                                               labels = c("pre-burn", "post-burn")))
+
+ggplot(NDSI_NDVI,aes(x=mean_ndsi,y=mean_ndvi,color=site)) + 
+  geom_point() +
+  theme_few() +
+  facet_wrap(~condition) +
+  theme(legend.position=c(0.7,0.8)) 
 
 ## End code for question 3
 
@@ -80,5 +106,36 @@ ggplot(summer_only,aes(x=ndmi,y=ndvi,color=site)) +
 #What month is the greenest month on average? Does this change in the burned
 # plots after the fire? 
 
+ndvi_month <- mutate(ndvi, month=month(DateTime),
+                     year=year(DateTime)) %>%
+  mutate(condition = cut(year, c(0, 2004, 2019), 
+                                    labels = c("pre-burn", "post-burn"))) %>%
+  group_by(month) %>%
+  filter(!is.na(burned)) %>%
+  gather(key=site, value=value, burned, unburned)
+  
+  
+ggplot(ndvi_month, aes(x=month, y=value, color=site)) +
+  geom_point() + 
+  geom_smooth(se=FALSE) +
+  theme_few() +
+  facet_wrap(~condition) +
+  scale_x_discrete(limits=c(1:12)) +
+  ylab("ndvi value")
+
+
 ##### Question 5 ####
 #What month is the snowiest on average?
+
+snowiest <- mutate(ndsi, month=month(DateTime),
+                   year=year(DateTime)) %>%
+  gather(key=site, value=value, burned, unburned) %>%
+  filter(!is.na(value))
+
+ggplot(ndvi_month, aes(x=month, y=value, color=site)) +
+  geom_point() + 
+  geom_smooth(se=FALSE) +
+  theme_few() +
+  scale_x_discrete(limits=c(1:12)) +
+  ylab("ndsi value")
+
